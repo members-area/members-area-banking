@@ -6,6 +6,7 @@ ofx = require 'ofx'
 entities = new (require('html-entities').AllHtmlEntities)
 
 class BankingController extends Controller
+  @before 'setActiveNagivationId'
   @before 'requireAdmin'
   @before 'processOFX', only: ['index']
 
@@ -126,5 +127,8 @@ class BankingController extends Controller
         transactions.sort (a, b) -> a.date - b.date
         output.accounts.push account
       callback null, output
+
+  setActiveNagivationId: ->
+    @activeNavigationId = 'members-area-banking'
 
 module.exports = BankingController
