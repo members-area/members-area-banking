@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/members-area/members-area-banking/issues"
   },
-  "homepage": "https://github.com/members-area/members-area-banking"
+  "homepage": "https://github.com/members-area/members-area-banking",
+  "dependencies": {
+    "async": "^0.7.0"
+  }
 }
