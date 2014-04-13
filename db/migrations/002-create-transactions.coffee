@@ -1,4 +1,4 @@
-async = require 'async'
+async = require 'members-area/node_modules/async'
 
 module.exports =
   up: (done) ->
@@ -10,6 +10,10 @@ module.exports =
 
       transaction_account_id:
         type: 'number'
+        required: true
+
+      fitid:
+        type: 'text'
         required: true
 
       when:
@@ -47,9 +51,15 @@ module.exports =
       columns: ['transaction_account_id', 'when']
       unique: false
 
+    fitidIndex =
+      table: 'transaction'
+      columns: ['transaction_account_id', 'fitid']
+      unique: true
+
     async.series
       createTable: (next) => @createTable 'transaction', columns, next
       addTransactionAccountIndex: (next) => @addIndex 'transaction_account_ref_idx', transactionAccountIndex, next
+      addFitidIndex: (next) => @addIndex 'fitid_unique_idx', fitidIndex, next
     , (err) ->
       console.dir err if err
       done err
