@@ -113,14 +113,15 @@ class BankingController extends Controller
           accountType: statement.STMTRS.BANKACCTFROM?.ACCTTYPE
           transactions: []
         transactions = account.transactions
-        for tx in statement.STMTRS.BANKTRANLIST?.STMTTRN ? []
+        STMTTRN = statement.STMTRS.BANKTRANLIST?.STMTTRN
+        STMTTRN = [STMTTRN] unless Array.isArray STMTTRN
+        for tx in STMTTRN ? [] when tx
           type = String(tx.TRNTYPE)
           dateString = String(tx.DTPOSTED)
           date = new Date(parseInt(dateString[0..3], 10), parseInt(dateString[4..5], 10), parseInt(dateString[6..7], 10))
           amount = Math.round(parseFloat(tx.TRNAMT) * 100)
           fitid = String(tx.FITID)
           name = entities.decode String(tx.NAME)
-          console.log name
           transactions.push {type, date, amount, fitid, name}
         transactions.sort (a, b) -> a.date - b.date
         output.accounts.push account
