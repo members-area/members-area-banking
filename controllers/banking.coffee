@@ -5,10 +5,13 @@ fs = require 'fs'
 ofx = require 'ofx'
 entities = new (require('html-entities').AllHtmlEntities)
 
+reconciliationInProgress = false
+
 class BankingController extends Controller
   @before 'setActiveNagivationId'
   @before 'requireAdmin'
   @before 'processOFX', only: ['index']
+  @before 'reprocess', only: ['index']
 
   index: (done) ->
     @req.models.TransactionAccount.find()
@@ -29,6 +32,79 @@ class BankingController extends Controller
       return done err
     else
       done()
+
+  # This method prevents multiple requests from doing multiple reconciliations at the same time.
+  reprocess: (done) ->
+    return done() unless @req.method is 'POST' and @req.body.reprocess
+    doIt = =>
+      if reconciliationInProgress
+        setTimeout doIt, 5
+      else
+        reconciliationInProgress = true
+        @_reprocess ->
+          reconciliationInProgress = false
+          done.apply this, arguments
+    doIt()
+
+  _reprocess: (done) ->
+    @req.models.Transaction.find().run (err, transactions) =>
+      return done err if err
+      regex = /^(.*) M(0[0-9]+) ([A-Z]{3})$/
+      paymentsByUser = {}
+      for tx in transactions when !tx.meta.isPayment and (matches = tx.description?.match(regex))
+        tx.accountHolder = matches[1]
+        tx.userId = parseInt matches[2], 10
+        tx.type = matches[3]
+        tx.ymd = tx.when.toISOString().substr(0,10)
+        paymentsByUser[tx.userId] ?= []
+        paymentsByUser[tx.userId].push tx
+
+      async.map _.pairs(paymentsByUser), @_processUserTransactions.bind(this), (err, groupedNewRecords) ->
+        done err
+
+  _processUserTransactions: ([userId, transactions], done) ->
+    #{userId, type, ymd, amount} = tx
+    transactions.sort (a, b) -> a.when - b.when
+    return done() unless transactions.length
+    @req.models.User.get userId, (err, user) =>
+      if !user
+        console.error "Could not find user '#{userId}'"
+      return done null, null if err or !user
+      nextPaymentDate = transactions[0].when
+      for roleUser in user.activeRoleUsers ? []
+        if roleUser.role?.meta?.subscriptionRequired
+          if +roleUser.approved < +nextPaymentDate
+            nextPaymentDate = roleUser.approved
+      if +user.meta.paidUntil > +nextPaymentDate
+        nextPaymentDate = user.meta.paidUntil
+
+      newRecords = []
+
+      for tx in transactions
+        payment =
+          user_id: userId
+          transaction_id: tx.id
+          type: tx.type
+          amount: tx.amount
+          status: 'paid'
+          include: true
+          when: tx.when
+          period_from: nextPaymentDate
+          period_count: 1
+        newRecords.push payment
+        nextPaymentDate = new Date(+nextPaymentDate)
+        nextPaymentDate.setMonth(nextPaymentDate.getMonth()+1)
+      user.setMeta paidUntil: nextPaymentDate
+      async.series
+        createPayments: (done) => @req.models.Payment.create newRecords, done
+        setTransactionsAsPayments: (done) =>
+          setIsPayment = (tx, done) ->
+            tx.setMeta isPayment: true
+            tx.save done
+          async.eachSeries transactions, setIsPayment, done
+        savePaidUntil: (done) => user.save done
+      , (err) =>
+        done err, newRecords
 
   processOFX: (done) ->
     return done() unless @req.method is 'POST' and @req.files?.ofxfile?
