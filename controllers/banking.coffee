@@ -70,13 +70,7 @@ class BankingController extends Controller
       if !user
         console.error "Could not find user '#{userId}'"
       return done null, null if err or !user
-      nextPaymentDate = transactions[0].when
-      for roleUser in user.activeRoleUsers ? []
-        if roleUser.role?.meta?.subscriptionRequired
-          if +roleUser.approved < +nextPaymentDate
-            nextPaymentDate = roleUser.approved
-      if +user.meta.paidUntil > +nextPaymentDate
-        nextPaymentDate = user.meta.paidUntil
+      nextPaymentDate = @req.models.Payment.getUserPaidUntil user, transactions[0].when
 
       newRecords = []
 
