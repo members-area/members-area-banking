@@ -70,7 +70,7 @@ class BankingController extends Controller
       if !user
         console.error "Could not find user '#{userId}'"
       return done null, null if err or !user
-      nextPaymentDate = @req.models.Payment.getUserPaidUntil user, transactions[0].when
+      nextPaymentDate = user.getPaidUntil transactions[0].when
 
       newRecords = []
 
@@ -88,7 +88,7 @@ class BankingController extends Controller
         newRecords.push payment
         nextPaymentDate = new Date(+nextPaymentDate)
         nextPaymentDate.setMonth(nextPaymentDate.getMonth()+1)
-      user.setMeta paidUntil: nextPaymentDate
+      user.paidUntil = nextPaymentDate
       async.series
         createPayments: (done) => @req.models.Payment.create newRecords, done
         setTransactionsAsPayments: (done) =>
