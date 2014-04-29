@@ -15,7 +15,7 @@ class BankingController extends Controller
 
   index: (done) ->
     @req.models.TransactionAccount.find()
-    .order("id", "ASC")
+    .order("id")
     .all (err, @transactionAccounts) =>
       done(err)
 
@@ -23,6 +23,7 @@ class BankingController extends Controller
     @req.models.TransactionAccount.get @req.params.id, (err, @transactionAccount) =>
       return done err if err
       @transactionAccount.getTransactions (err, @transactions) =>
+        @transactions.sort (a, b) -> +b.when - +a.when
         done(err)
 
   requireAdmin: (done) ->
