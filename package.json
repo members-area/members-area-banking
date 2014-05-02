@@ -1,6 +1,6 @@
 {
   "name": "members-area-banking",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OFX import/etc for the Members Area",
   "main": "index.coffee",
   "scripts": {
