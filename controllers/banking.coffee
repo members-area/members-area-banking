@@ -190,7 +190,7 @@ class BankingController extends Controller
         for tx in STMTTRN ? [] when tx
           type = String(tx.TRNTYPE)
           dateString = String(tx.DTPOSTED)
-          date = new Date(parseInt(dateString[0..3], 10), parseInt(dateString[4..5], 10), parseInt(dateString[6..7], 10))
+          date = new Date(parseInt(dateString[0..3], 10), parseInt(dateString[4..5], 10) - 1, parseInt(dateString[6..7], 10))
           amount = Math.round(parseFloat(tx.TRNAMT) * 100)
           fitid = String(tx.FITID)
           name = entities.decode String(tx.NAME)
