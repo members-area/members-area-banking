@@ -147,11 +147,17 @@ class BankingController extends Controller
 
   reconcileTransactions: (account, oldTransactions, newTransactions, done) ->
     newRecords = []
+    updatedTransactions = []
     oldTransactionsByFitid = {}
     oldTransactionsByFitid[tx.fitid] = tx for tx in oldTransactions
     for tx in newTransactions
       oldTransaction = oldTransactionsByFitid[tx.fitid]
-      continue if oldTransaction
+      if oldTransaction
+        # Check details
+        if oldTransaction.when.toISOString().substr(0, 10) isnt tx.date.toISOString().substr(0, 10)
+          oldTransaction.when = tx.date
+          updatedTransactions.push oldTransaction
+        continue
       newRecordData =
         transaction_account_id: account.id
         fitid: tx.fitid
@@ -165,7 +171,11 @@ class BankingController extends Controller
     else
       @req.models.Transaction.create newRecords, (err) ->
         return done err if err
-        done null, newRecords
+        save = (model, next) ->
+          model.save next
+        async.eachSeries updatedTransactions, save, (err) ->
+          return done err if err
+          done null, newRecords
 
   parseOFX: (filename, callback) ->
     regex = /^(.*) M(0[0-9]+) ([A-Z]{3})$/
