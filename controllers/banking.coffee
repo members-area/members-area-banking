@@ -42,7 +42,9 @@ class BankingController extends Controller
         setTimeout doIt, 500
       else
         reconciliationInProgress = true
+        console.log "[#{new Date().toISOString()}] STARTING REPROCESSING BANKING DATA"
         @_reprocess ->
+          console.log "[#{new Date().toISOString()}] REPROCESSING BANKING DATA FINISHED"
           reconciliationInProgress = false
           done.apply this, arguments
     doIt()
