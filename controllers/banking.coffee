@@ -39,7 +39,7 @@ class BankingController extends Controller
     return done() unless @req.method is 'POST' and @req.body.reprocess
     doIt = =>
       if reconciliationInProgress
-        setTimeout doIt, 5
+        setTimeout doIt, 500
       else
         reconciliationInProgress = true
         @_reprocess ->
