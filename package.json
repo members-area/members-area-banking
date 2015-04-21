@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/members-area/members-area-banking",
   "dependencies": {
-    "ofx": "^0.2.0",
-    "html-entities": "^1.0.10"
+    "html-entities": "^1.0.10",
+    "ofx": "git://github.com/benjie/node-ofx.git#fix-node-expat"
   }
 }
