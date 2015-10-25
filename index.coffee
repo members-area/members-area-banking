@@ -5,7 +5,7 @@ module.exports =
 
     @hook 'navigation_items', @modifyNavigationItems.bind(this)
     @hook 'models:initialize', ({models}) =>
-      models.Transaction.hasOne 'transaction_account', models.TransactionAccount, reverse: 'transactions', autoFetch: true
+      models.Transaction.hasOne 'transaction_account', models.TransactionAccount, reverse: 'transactions'
 
     done()
 
